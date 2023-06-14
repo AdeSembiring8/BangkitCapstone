@@ -15,7 +15,7 @@ mongoose.connect('mongodb+srv://fatwasembiring8:Kembaren_8@cluster0.f36seql.mong
     console.log('Connected to MongoDB');
   })
   .catch(err => {
-    console.error('Error connecting to MongoDB:', err);
+    console.error('Error connecting to MongoDB :', err);
   });
 
 const userSchema = new mongoose.Schema({

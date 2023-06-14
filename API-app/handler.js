@@ -4,6 +4,7 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const { nanoid } = require('nanoid');
 const users = require('./users');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 
@@ -87,7 +88,10 @@ const loginUser = (req, res) => {
   User.findOne({ email: email })
     .then(user => {
       if (user && bcrypt.compareSync(password, user.password)) {
-        return res.status(200).json({ message: 'Login berhasil!' });
+        // Login berhasil, generate token
+        const token = jwt.sign({ userId: user._id }, 'secretKey', { expiresIn: '1h' });
+
+        return res.status(200).json({ message: 'Login berhasil!', token: token });
       }
 
       return res.status(401).json({ message: 'Email atau password salah!' });

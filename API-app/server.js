@@ -1,27 +1,25 @@
-/* eslint-disable linebreak-style */
-const Hapi = require('@hapi/hapi');
-const routes = require('./routes');
 const express = require('express');
-
 const app = express();
+const router = require('./routes');
 
 app.use(express.json());
 
-const init = async () => {
-  const server = Hapi.server({
-    port: 3000,
-    host: 'localhost',
-    routes: {
-      cors: {
-        origin: ['*'],
-      },
-    },
-  });
+const port = 3000;
+const { registerUser, loginUser, resetPassword, getUsers } = require('./handler.js');
 
-  server.route(routes);
+app.post('/register', registerUser);
+app.post('/login', loginUser);
+app.post('/reset-password', resetPassword);
+app.get('/users', getUsers);
 
-  await server.start();
-  console.log(`Server berjalan pada ${server.info.uri}`);
-};
+app.all('/', (req, res) => {
+  return res.status(405).send('Halaman tidak dapat diakses dengan method tersebut');
+});
 
-init();
+app.all('*', (req, res) => {
+  return res.status(404).send('Halaman tidak ditemukan');
+});
+
+app.listen(port, () => {
+  console.log(`Server berjalan pada http://localhost:${port}`);
+});

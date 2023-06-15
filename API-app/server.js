@@ -4,7 +4,6 @@ const router = require('./routes');
 
 app.use(express.json());
 
-const port = 3000;
 const { registerUser, loginUser, resetPassword, getUsers } = require('./handler.js');
 
 app.post('/register', registerUser);
@@ -20,6 +19,4 @@ app.all('*', (req, res) => {
   return res.status(404).send('Halaman tidak ditemukan');
 });
 
-app.listen(port, () => {
-  console.log(`Server berjalan pada http://localhost:${port}`);
-});
+module.exports = app;

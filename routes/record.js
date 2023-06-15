@@ -15,14 +15,14 @@ const connection = mysql.createConnection({
 })
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, "uploads/");
+        cb(null, "uploads/");
     },
     filename: function (req, file, cb) {
-      cb(null, Date.now() + "-" + file.originalname);
+        cb(null, Date.now() + "-" + file.originalname);
     },
-  });
-  
-  const upload = multer({ storage: storage }).any();
+});
+
+const upload = multer({ storage: storage }).any();
 
 router.get("/users", (req, res) => {
     const query = "SELECT * FROM users"
@@ -134,26 +134,44 @@ router.get("/skinDisease/:id", (req, res) => {
     });
 });
 
-// API untuk mengunggah gambar
-  router.post("/uploadImage", (req, res, next) => {
+//API untuk mengunggah gambar
+router.post("/uploadImage", verifyToken, (req, res, next) => {
     upload(req, res, (err) => {
-      if (err) {
-        res.status(400).send({ message: "Gagal mengunggah gambar" });
-      } else {
-        const { idUsers } = req.body;
-        const gambar = req.files[0].filename;
-  
-        const query = "INSERT INTO inputUsers (idUsers, gambar) VALUES (?, ?)";
-        connection.query(query, [idUsers, gambar], (err, result) => {
-          if (err) {
-            res.status(500).send({ message: err.sqlMessage });
-          } else {
-            res.status(201).send({ message: "Gambar berhasil diunggah", insertId: result.insertId });
-          }
-        });
-      }
+        if (err) {
+            res.status(400).send({ message: "Gagal mengunggah gambar" });
+        } else {
+            const idUsers = req.user.userId; // Menggunakan id pengguna yang mengunggah gambar
+            const gambar = req.files[0].filename;
+
+            const query = "INSERT INTO inputUsers (idUsers, gambar) VALUES (?, ?)";
+            connection.query(query, [idUsers, gambar], (err, result) => {
+                if (err) {
+                    res.status(500).send({ message: err.sqlMessage });
+                } else {
+                    res.status(201).send({ message: "Gambar berhasil diunggah", insertId: result.insertId });
+                }
+            });
+        }
     });
-  });
+});
+
+function verifyToken(req, res, next) {
+    const token = req.headers.authorization;
+
+    if (!token) {
+        res.status(401).send({ message: "Unauthorized" });
+    } else {
+        jwt.verify(token, "your-secret-key", (err, decoded) => {
+            if (err) {
+                res.status(401).send({ message: "Invalid token" });
+            } else {
+                req.user = decoded;
+                next();
+            }
+        });
+    }
+}
+
 
 
 module.exports = router;

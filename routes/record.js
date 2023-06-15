@@ -139,6 +139,7 @@ router.post("/uploadImage", verifyToken, (req, res, next) => {
     upload(req, res, (err) => {
         if (err) {
             res.status(400).send({ message: "Gagal mengunggah gambar" });
+            console.log(err);
         } else {
             const idUsers = req.user.userId; // Menggunakan id pengguna yang mengunggah gambar
             const gambar = req.files[0].filename;
@@ -172,6 +173,17 @@ function verifyToken(req, res, next) {
     }
 }
 
-
+router.get("/uploadHistory", verifyToken, (req, res) => {
+    const idUsers = req.user.userId;
+  
+    const query = "SELECT gambar FROM inputUsers WHERE idUsers = ?";
+    connection.query(query, [idUsers], (err, result) => {
+      if (err) {
+        res.status(500).send({ message: err.sqlMessage });
+      } else {
+        res.status(200).send({ history: result });
+      }
+    });
+  });
 
 module.exports = router;

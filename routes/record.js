@@ -134,6 +134,18 @@ router.get("/skinDisease/:id", (req, res) => {
     });
 });
 
+router.get("/allskinDisease", (req, res) => {
+    const query = "SELECT * FROM skinDisease";
+    connection.query(query, (err, result) => {
+      if (err) {
+        res.status(500).send({ message: err.sqlMessage });
+        console.log(err);
+      } else {
+        res.status(200).send({ diseases: result });
+      }
+    });
+  });
+
 //API untuk mengunggah gambar
 router.post("/uploadImage", verifyToken, (req, res, next) => {
     upload(req, res, (err) => {
@@ -173,6 +185,7 @@ function verifyToken(req, res, next) {
     }
 }
 
+//History untuk semua penyakit
 router.get("/uploadHistory", verifyToken, (req, res) => {
     const idUsers = req.user.userId;
   
@@ -185,5 +198,21 @@ router.get("/uploadHistory", verifyToken, (req, res) => {
       }
     });
   });
+
+  // Fitur Search Mas
+  router.get("/skinDiseases/search", (req, res) => {
+    const searchTerm = req.query.searchTerm;
+    const query = "SELECT * FROM skinDisease WHERE namaPenyakit LIKE ? OR deskripsi LIKE ?";
+    const searchValue = "%" + searchTerm + "%";
+  
+    connection.query(query, [searchValue, searchValue], (err, result) => {
+      if (err) {
+        res.status(500).send({ message: err.sqlMessage });
+      } else {
+        res.status(200).send({ diseases: result });
+      }
+    });
+  });
+  
 
 module.exports = router;

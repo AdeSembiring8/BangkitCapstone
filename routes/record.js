@@ -4,6 +4,7 @@ const mysql = require('mysql')
 const router = express.Router()
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
+const multer = require("multer");
 
 // TODO: Sesuaikan konfigurasi database
 const connection = mysql.createConnection({
@@ -12,6 +13,16 @@ const connection = mysql.createConnection({
     database: 'sqlcaps01',
     password: 'sqlcaps01'
 })
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, "uploads/");
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + "-" + file.originalname);
+    },
+  });
+  
+  const upload = multer({ storage: storage }).any();
 
 router.get("/users", (req, res) => {
     const query = "SELECT * FROM users"
@@ -106,6 +117,43 @@ router.put("/users/:id/password", (req, res) => {
         }
     });
 });
+
+// Mengambil data Penyakit Kulit 
+router.get("/skinDisease/:id", (req, res) => {
+    const diseaseId = req.params.id;
+    const query = "SELECT * FROM skinDisease WHERE id = ?";
+    connection.query(query, [diseaseId], (err, rows) => {
+        if (err) {
+            res.status(500).send({ message: err.sqlMessage });
+        } else if (rows.length === 0) {
+            res.status(404).send({ message: "Penyakit kulit tidak ditemukan" });
+        } else {
+            const disease = rows[0];
+            res.status(200).send(disease);
+        }
+    });
+});
+
+// API untuk mengunggah gambar
+  router.post("/uploadImage", (req, res, next) => {
+    upload(req, res, (err) => {
+      if (err) {
+        res.status(400).send({ message: "Gagal mengunggah gambar" });
+      } else {
+        const { idUsers } = req.body;
+        const gambar = req.files[0].filename;
+  
+        const query = "INSERT INTO inputUsers (idUsers, gambar) VALUES (?, ?)";
+        connection.query(query, [idUsers, gambar], (err, result) => {
+          if (err) {
+            res.status(500).send({ message: err.sqlMessage });
+          } else {
+            res.status(201).send({ message: "Gambar berhasil diunggah", insertId: result.insertId });
+          }
+        });
+      }
+    });
+  });
 
 
 module.exports = router;

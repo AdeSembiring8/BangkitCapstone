@@ -151,66 +151,138 @@ router.get("/allskinDisease", (req, res) => {
 //API untuk mengunggah gambar
 
   
+// router.post("/uploadImage", verifyToken, (req, res, next) => {
+//     upload(req, res, (err) => {
+//         if (err) {
+//             res.status(400).send({ message: "Gagal mengunggah gambar" });
+//             console.log(err);
+//         } else {
+//             const idUsers = req.user.userId;
+//             const files = req.files;
+
+//             if (!files || files.length === 0) {
+//                 res.status(400).send({ message: "Tidak ada gambar yang diunggah" });
+//                 return;
+//             }
+
+//             const filePromises = files.map((file) => {
+//                 const fileName = file.filename;
+//                 const fileBuffer = file.buffer;
+
+//                 const blob = bucket.file(fileName);
+//                 const blobStream = blob.createWriteStream({
+//                     resumable: false,
+//                     public: true
+//                 });
+
+//                 return new Promise((resolve, reject) => {
+//                     blobStream.on('error', (err) => {
+//                         console.log(err);
+//                         reject(err);
+//                     });
+
+//                     blobStream.on('finish', () => {
+//                         resolve(fileName);
+//                     });
+
+//                     blobStream.end(fileBuffer);
+//                 });
+//             });
+
+//             Promise.all(filePromises)
+//                 .then((fileNames) => {
+//                     // Simpan informasi gambar ke MySQL
+//                     const query = "INSERT INTO inputUsers (idUsers, gambar) VALUES (?, ?)";
+//                     const insertValues = fileNames.map((fileName) => [idUsers, fileName]);
+
+//                     connection.query(query, [insertValues], (err, result) => {
+//                         if (err) {
+//                             console.log(err);
+//                             res.status(500).send({ message: err.sqlMessage });
+//                         } else {
+//                             res.status(201).send({ message: "Gambar berhasil diunggah", insertId: result.insertId });
+//                         }
+//                     });
+//                 })
+//                 .catch((err) => {
+//                     res.status(500).send({ message: "Gagal mengunggah gambar" });
+//                 });
+//         }
+//     });
+// });
+
 router.post("/uploadImage", verifyToken, (req, res, next) => {
     upload(req, res, (err) => {
-        if (err) {
-            res.status(400).send({ message: "Gagal mengunggah gambar" });
-            console.log(err);
-        } else {
-            const idUsers = req.user.userId;
-            const files = req.files;
-
-            if (!files || files.length === 0) {
-                res.status(400).send({ message: "Tidak ada gambar yang diunggah" });
-                return;
-            }
-
-            const filePromises = files.map((file) => {
-                const fileName = file.filename;
-                const fileBuffer = file.buffer;
-
-                const blob = bucket.file(fileName);
-                const blobStream = blob.createWriteStream({
-                    resumable: false,
-                    public: true
-                });
-
-                return new Promise((resolve, reject) => {
-                    blobStream.on('error', (err) => {
-                        console.log(err);
-                        reject(err);
-                    });
-
-                    blobStream.on('finish', () => {
-                        resolve(fileName);
-                    });
-
-                    blobStream.end(fileBuffer);
-                });
-            });
-
-            Promise.all(filePromises)
-                .then((fileNames) => {
-                    // Simpan informasi gambar ke MySQL
-                    const query = "INSERT INTO inputUsers (idUsers, gambar) VALUES (?, ?)";
-                    const insertValues = fileNames.map((fileName) => [idUsers, fileName]);
-
-                    connection.query(query, [insertValues], (err, result) => {
-                        if (err) {
-                            console.log(err);
-                            res.status(500).send({ message: err.sqlMessage });
-                        } else {
-                            res.status(201).send({ message: "Gambar berhasil diunggah", insertId: result.insertId });
-                        }
-                    });
-                })
-                .catch((err) => {
-                    res.status(500).send({ message: "Gagal mengunggah gambar" });
-                });
+      if (err) {
+        res.status(400).send({ message: "Gagal mengunggah gambar" });
+        console.log(err);
+      } else {
+        const idUsers = req.user.userId;
+        const files = req.files;
+  
+        if (!files || files.length === 0) {
+          res.status(400).send({ message: "Tidak ada gambar yang diunggah" });
+          return;
         }
+  
+        const filePromises = files.map((file) => {
+          const fileName = file.filename;
+          const fileBuffer = file.buffer;
+  
+          const blob = bucket.file(fileName);
+          const blobStream = blob.createWriteStream({
+            resumable: false,
+            public: true,
+            metadata: {
+              contentType: file.mimetype,
+            },
+          });
+  
+          return new Promise((resolve, reject) => {
+            blobStream.on("error", (err) => {
+              console.log(err);
+              reject(err);
+            });
+  
+            blobStream.on("finish", () => {
+              resolve(fileName);
+            });
+  
+            blobStream.end(fileBuffer);
+          });
+        });
+  
+        Promise.all(filePromises)
+          .then((fileNames) => {
+            // Simpan informasi gambar ke MySQL
+            const query =
+              "INSERT INTO inputUsers (idUsers, gambar) VALUES (?, ?)";
+            const insertValues = fileNames.map((fileName) => [
+              idUsers,
+              `gs://${bucketName}/${fileName}`, // Menggunakan URL Google Cloud Storage untuk gambar
+            ]);
+  
+            connection.query(query, [insertValues], (err, result) => {
+              if (err) {
+                console.log(err);
+                res.status(500).send({ message: err.sqlMessage });
+              } else {
+                res
+                  .status(201)
+                  .send({
+                    message: "Gambar berhasil diunggah",
+                    insertId: result.insertId,
+                  });
+              }
+            });
+          })
+          .catch((err) => {
+            res.status(500).send({ message: "Gagal mengunggah gambar" });
+          });
+      }
     });
-});
-
+  });
+  
 
 function verifyToken(req, res, next) {
     const token = req.headers.authorization;

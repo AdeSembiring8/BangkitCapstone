@@ -256,7 +256,8 @@ router.post("/uploadImage", verifyToken, (req, res, next) => {
           .then((fileNames) => {
             // Simpan informasi gambar ke MySQL
             const query =
-              "INSERT INTO inputUsers (idUsers, gambar) VALUES (?, ?)";
+              "INSERT INTO inputUsers (id, gambar) VALUES (?, ?)";
+             // "INSERT INTO inputUsers (idUsers, gambar) VALUES (?, ?)";
             const insertValues = fileNames.map((fileName) => [
               idUsers,
               `gs://${bucketName}/${fileName}`, // Menggunakan URL Google Cloud Storage untuk gambar
